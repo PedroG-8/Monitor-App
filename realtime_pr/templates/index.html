@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    {% load static %}
+    <!--<link rel="stylesheet" href="{% static 'css/styles.css' %}">-->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        .imgbox {
+            display: grid;
+            height: 80%;
+        }
+        .center-fit {
+            max-width: 100%;
+            max-height: 80vh;
+            margin: auto;
+        }
+    </style>
+</head>
+
+<body style="margin:0; padding: 0; background-color: black; overflow: hidden;">
+
+    <!-- TODO -->
+    <!-- Testar estaticamente um pdf com link no servidor
+         e um video do youtube-->
+
+    <div class="imgbox" id="header"></div>
+
+    <h1 id="app">{{ text }}</h1>
+
+    <!-- TODO -->
+    <!-- Sobrepor o qr code-->
+    <div id="qr_div">
+      <img id="qr" src="static/images/qr.png"></img>
+    </div>
+
+
+    <script>
+
+        // data.message é o nome do ficheiro, por exemplo "imagem.png"
+
+        var socket = new WebSocket('ws://localhost:8000/ws/some_url/');
+        socket.onmessage = function (event) {
+            var data = JSON.parse(event.data);
+            console.log(data);
+            document.querySelector('#app').innerText = data.message;
+
+
+
+            if (data.type == 'img') {
+                var img = document.createElement("img");
+                img.src = "http://peig2.westeurope.cloudapp.azure.com/download/" + data.message;
+                img.classList.add("center-fit");
+
+                var src = document.getElementById("header");
+                src.innerHTML = '';
+                src.appendChild(img);
+
+                // Parte do qr code
+                // var qr_div = document.getElementById("qr_div");
+                // qr_div.innerHTML = '';
+                // var qr_img = document.createElement("img");
+                // qr_img.src = "static/images/qr.png";
+                // console.log(qr_img);
+                // qr_div.appendChild(qr_img);
+            }
+            else if (data.type == 'video') {
+                var vid = document.createElement("video");
+                vid.classList.add("center-fit");
+                //vid.setAttribute("onloadeddata", "this.play();"); // FIREFOX
+                vid.setAttribute("autoplay", "autoplay");
+                // se o video nao estiver mutado, temos de clicar
+                // na pagina 1 vez para o chrome dar autoplay
+                //vid.setAttribute("muted", "muted");
+
+                var source = document.createElement("source");
+                source.setAttribute("src", "http://peig2.westeurope.cloudapp.azure.com/download/"+data.message);
+                source.setAttribute("type", "video/mp4");
+
+                var src = document.getElementById("header");
+                src.innerHTML = '';
+                src.appendChild(vid);
+                vid.appendChild(source);
+            }
+        }
+    </script>
+
+</body>
+
+</html>
