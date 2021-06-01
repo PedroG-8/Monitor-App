@@ -18,7 +18,7 @@ import subprocess
 
 
 class WSConsumer(WebsocketConsumer):
-	
+
 
 
 	def init(self):
@@ -27,7 +27,7 @@ class WSConsumer(WebsocketConsumer):
 		self.cloud_content = {}
 		self.currentindex = 0
 		self.videos = {}
-		
+
 
 		self.getFilesFromCloud()
 		# calcular à priori a length dos videos
@@ -54,7 +54,7 @@ class WSConsumer(WebsocketConsumer):
 		img.save("integers/static/images/qr.png")
 
 
-	
+
 	# verifica os ficheiros da cloud
 	def getFilesFromCloud(self):
 		url_10 = 'http://peig2.westeurope.cloudapp.azure.com/api/documents/'
@@ -63,7 +63,7 @@ class WSConsumer(WebsocketConsumer):
 			ls = r.json()['results']
 
 			# Get cloud content
-			self.cloud_content = {} 
+			self.cloud_content = {}
 			for item in ls:
 				self.cloud_content[item['downloadlink'].split('/')[-1]] = item['downloadlink']
 			print("Cloud content", self.cloud_content.keys())
@@ -72,7 +72,7 @@ class WSConsumer(WebsocketConsumer):
 			errors += 1
 			print("{}- Trying to resolve URL '{}'".format(erros, url_10))
 			self.getFilesFromCloud()
-	
+
 	# verifica o input do utilozador
 	def verifyUserInput(self):
 		url_1 = 'http://peig2.westeurope.cloudapp.azure.com/api/agentupdates/3/'
@@ -92,7 +92,7 @@ class WSConsumer(WebsocketConsumer):
 		else:
 			return 'Unsuported'
 
-	
+
 	def send_msg(self, filename, type):
 		self.send(json.dumps({
 			'message': filename,
@@ -104,13 +104,12 @@ class WSConsumer(WebsocketConsumer):
 			f.seek(0)
 			f.write(filename)
 			f.truncate()
-	
-	
+
+
 	def connect(self):
 		print("aqui")
-		self.init()
 		self.accept()
-		self.currentindex = 0
+		self.init()
 
 		self.make_qr_code('http://peig2.westeurope.cloudapp.azure.com/control/3/')
 
@@ -122,7 +121,7 @@ class WSConsumer(WebsocketConsumer):
 
 		while True:
 			if(self.currentindex > len(self.cloud_content.keys()) - 1):
-				self.currentindex = 0	
+				self.currentindex = 0
 
 			if time.time() - user_timer > 1:
 				try:
@@ -130,7 +129,7 @@ class WSConsumer(WebsocketConsumer):
 					r2 = requests.get(url_1, auth=('genix', 'genix'))
 				except:
 					print("Could not resolve URL...")
-		
+
 				content_name = r2.json()['contentname']
 				content_confirm = r2.json()['content_confirm']
 
@@ -150,12 +149,12 @@ class WSConsumer(WebsocketConsumer):
 						timer = 5
 
 					self.send_msg(content_name, type)
-					cloud_timer = time.time()	
+					cloud_timer = time.time()
 
 					self.currentindex = list(self.cloud_content.keys()).index(content_name) + 1
 					subprocess.call("./postupdate.sh")
 
-					
+
 				user_timer = time.time()
 
 
