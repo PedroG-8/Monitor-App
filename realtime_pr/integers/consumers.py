@@ -18,10 +18,26 @@ import subprocess
 
 
 class WSConsumer(WebsocketConsumer):
-	erros = 0
-	cloud_content = {}
-	currentindex = 0
+	
 
+
+	def init(self):
+		print("Initializating WSConsumer")
+		self.erros = 0
+		self.cloud_content = {}
+		self.currentindex = 0
+		self.videos = {}
+		
+
+		self.getFilesFromCloud()
+		# calcular à priori a length dos videos
+		for filename in list(self.cloud_content.keys()):
+			print(filename.split('.')[1])
+			if self.extension(filename.split('.')[1]) == 'video':
+				clip = VideoFileClip(self.cloud_content[filename])
+				self.videos[filename] = clip.duration
+
+		print(self.videos)
 
 	def make_qr_code(self, url):
 		qr = qrcode.QRCode(
@@ -91,6 +107,8 @@ class WSConsumer(WebsocketConsumer):
 	
 	
 	def connect(self):
+		print("aqui")
+		self.init()
 		self.accept()
 		self.currentindex = 0
 
@@ -99,9 +117,8 @@ class WSConsumer(WebsocketConsumer):
 		cloud_timer = time.time()
 		user_timer = time.time()
 
-		videos = {}
-
-		timer = 5
+		filename = list(self.cloud_content.keys())[self.currentindex]
+		timer = self.videos[filename] if self.extension(filename) == 'video' else 5
 
 		while True:
 			if(self.currentindex > len(self.cloud_content.keys()) - 1):
@@ -123,12 +140,12 @@ class WSConsumer(WebsocketConsumer):
 					type = self.extension(ext)
 
 					# esta operação é pesada logo convem só fazer uma vez ou quando há novos videos
-					if type == 'video' and filename not in videos.keys():
+					if type == 'video' and filename not in self.videos.keys():
 						clip = VideoFileClip(self.cloud_content[filename])
 						timer = clip.duration
-						videos[filename] = timer
-					elif type == 'video' and filename in videos.keys():
-						timer = videos[filename]
+						self.videos[filename] = timer
+					elif type == 'video' and filename in self.videos.keys():
+						timer = self.videos[filename]
 					else:
 						timer = 5
 
@@ -153,12 +170,12 @@ class WSConsumer(WebsocketConsumer):
 				type = self.extension(ext)
 
 				# esta operação é pesada logo convem só fazer uma vez ou quando há novos videos
-				if type == 'video' and filename not in videos.keys():
+				if type == 'video' and filename not in self.videos.keys():
 					clip = VideoFileClip(self.cloud_content[filename])
 					timer = clip.duration
-					videos[filename] = timer
-				elif type == 'video' and filename in videos.keys():
-					timer = videos[filename]
+					self.videos[filename] = timer
+				elif type == 'video' and filename in self.videos.keys():
+					timer = self.videos[filename]
 				else:
 					timer = 5
 
