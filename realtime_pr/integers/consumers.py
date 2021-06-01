@@ -89,6 +89,8 @@ class WSConsumer(WebsocketConsumer):
 			return 'img'
 		elif extension in ['mp4', 'MOV']:
 			return 'video'
+		elif extension == 'pdf':
+			return 'pdf'
 		else:
 			return 'Unsuported'
 
@@ -148,7 +150,7 @@ class WSConsumer(WebsocketConsumer):
 					else:
 						timer = 5
 
-					self.send_msg(content_name, type)
+					self.send_msg(self.cloud_content[content_name], type)
 					cloud_timer = time.time()
 
 					self.currentindex = list(self.cloud_content.keys()).index(content_name) + 1
@@ -168,6 +170,8 @@ class WSConsumer(WebsocketConsumer):
 				ext = filename.split('.')[-1]
 				type = self.extension(ext)
 
+				print(self.cloud_content[filename])
+
 				# esta operação é pesada logo convem só fazer uma vez ou quando há novos videos
 				if type == 'video' and filename not in self.videos.keys():
 					clip = VideoFileClip(self.cloud_content[filename])
@@ -179,7 +183,11 @@ class WSConsumer(WebsocketConsumer):
 					timer = 5
 
 				print("SWITCHED TO", filename)
-				self.send_msg(filename, type)
+
+				if type == 'pdf':
+					self.send_msg("https://drive.google.com/viewerng/viewer?embedded=true&url="+ self.cloud_content[filename], type)
+				else:
+					self.send_msg(self.cloud_content[filename], type)
 
 				print("Timer: {}".format(timer))
 				cloud_timer = time.time()
