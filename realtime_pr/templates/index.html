@@ -35,8 +35,22 @@
     <!-- TODO -->
     <!-- Sobrepor o qr code-->
     <div id="qr_div">
-      <img id="qr" src="static/images/qr.png"></img>
+        <img id="qr" src="static/images/qr.png"></img>
     </div>
+
+
+    <!--
+        Template para videos de youtube
+        fazer em python:
+
+        link.split("watch?v=")
+        src = link[0] + 'embed/' + link[1] + '?autoplay=1&mute=1'
+       
+
+    <iframe with="420" height="315"
+        src="https://www.youtube.com/embed/668nUCeBHyY?autoplay=1&mute=1">
+    </iframe>-->
+
 
 
     <script>
@@ -78,7 +92,7 @@
                 //vid.setAttribute("muted", "muted");
 
                 var source = document.createElement("source");
-                source.setAttribute("src", "http://peig2.westeurope.cloudapp.azure.com/download/"+data.message);
+                source.setAttribute("src", "http://peig2.westeurope.cloudapp.azure.com/download/" + data.message);
                 source.setAttribute("type", "video/mp4");
 
                 var src = document.getElementById("header");

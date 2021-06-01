@@ -3,6 +3,7 @@ from channels.generic.websocket import WebsocketConsumer
 
 import qrcode
 from PIL import Image
+from moviepy.editor import VideoFileClip		# pip install moviepy
 
 import json
 from time import sleep
@@ -98,6 +99,10 @@ class WSConsumer(WebsocketConsumer):
 		cloud_timer = time.time()
 		user_timer = time.time()
 
+		videos = {}
+
+		timer = 5
+
 		while True:
 			if(self.currentindex > len(self.cloud_content.keys()) - 1):
 				self.currentindex = 0	
@@ -116,17 +121,28 @@ class WSConsumer(WebsocketConsumer):
 					ext = content_name.split('.')[-1]
 					print("UPDATED TO", content_name)
 					type = self.extension(ext)
+
+					# esta operação é pesada logo convem só fazer uma vez ou quando há novos videos
+					if type == 'video' and filename not in videos.keys():
+						clip = VideoFileClip(self.cloud_content[filename])
+						timer = clip.duration
+						videos[filename] = timer
+					elif type == 'video' and filename in videos.keys():
+						timer = videos[filename]
+					else:
+						timer = 5
+
 					self.send_msg(content_name, type)
-
-					self.currentindex = list(self.cloud_content.keys()).index(content_name)
-					subprocess.call("./postupdate.sh")
-
 					cloud_timer = time.time()	
 
+					self.currentindex = list(self.cloud_content.keys()).index(content_name) + 1
+					subprocess.call("./postupdate.sh")
+
+					
 				user_timer = time.time()
 
 
-			elif time.time() - cloud_timer > 5:
+			elif time.time() - cloud_timer > timer:
 				self.getFilesFromCloud()
 				contentdir = os.listdir(pathlib.Path(__file__).parent.absolute().joinpath('static/images/'))
 
@@ -136,7 +152,18 @@ class WSConsumer(WebsocketConsumer):
 				ext = filename.split('.')[-1]
 				type = self.extension(ext)
 
+				# esta operação é pesada logo convem só fazer uma vez ou quando há novos videos
+				if type == 'video' and filename not in videos.keys():
+					clip = VideoFileClip(self.cloud_content[filename])
+					timer = clip.duration
+					videos[filename] = timer
+				elif type == 'video' and filename in videos.keys():
+					timer = videos[filename]
+				else:
+					timer = 5
+
 				print("SWITCHED TO", filename)
 				self.send_msg(filename, type)
 
+				print("Timer: {}".format(timer))
 				cloud_timer = time.time()
