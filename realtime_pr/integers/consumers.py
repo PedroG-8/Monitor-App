@@ -23,21 +23,11 @@ class WSConsumer(WebsocketConsumer):
 
 	def init(self):
 		print("Initializating WSConsumer")
-		self.erros = 0
 		self.cloud_content = {}
 		self.currentindex = 0
-		self.videos = {}
 
-
+		self.timers = []
 		self.getFilesFromCloud()
-		# calcular à priori a length dos videos
-		for filename in list(self.cloud_content.keys()):
-			print(filename.split('.')[1])
-			if self.extension(filename.split('.')[1]) == 'video':
-				clip = VideoFileClip(self.cloud_content[filename])
-				self.videos[filename] = clip.duration
-
-		print(self.videos)
 
 	def make_qr_code(self, url):
 		qr = qrcode.QRCode(
@@ -57,19 +47,30 @@ class WSConsumer(WebsocketConsumer):
 
 	# verifica os ficheiros da cloud
 	def getFilesFromCloud(self):
-		url_10 = 'http://peig2.westeurope.cloudapp.azure.com/api/documents/'
+		url_10 = 'http://peig2.westeurope.cloudapp.azure.com/api/agent/3/'
+		erros = 0
 		try:
 			r = requests.get(url_10, auth=('genix', 'genix'))
-			ls = r.json()['results']
+			ls = r.json()['group']['contentprogram_set'][0]['programentry_set']
+
 
 			# Get cloud content
 			self.cloud_content = {}
+			self.timers = []
 			for item in ls:
-				self.cloud_content[item['downloadlink'].split('/')[-1]] = item['downloadlink']
+				if str(item['doc']['youtubelink']) != '':
+					self.cloud_content[str(item['doc']['id']) + '.youtube'] = item['doc']['youtubelink']
+					self.timers.append(item['duration'])
+				else:
+					self.cloud_content[item['doc']['docname']] = item['doc']['downloadlink']
+					self.timers.append(item['duration'])
+
+					
 			print("Cloud content", self.cloud_content.keys())
-			erros = 0
+			print("Timers: ", self.timers)
+
 		except:
-			errors += 1
+			erros += 1
 			print("{}- Trying to resolve URL '{}'".format(erros, url_10))
 			self.getFilesFromCloud()
 
@@ -79,6 +80,7 @@ class WSConsumer(WebsocketConsumer):
 		try:
 			r2 = requests.get(url_1, auth=('genix', 'genix'))
 			erros = 0
+			return r2.json()['contentname'], r2.json()['content_confirm']
 		except:
 			errors += 1
 			print("{}- Trying to resolve URL '{}'".format(erros, url_1))
@@ -91,6 +93,8 @@ class WSConsumer(WebsocketConsumer):
 			return 'video'
 		elif extension == 'pdf':
 			return 'pdf'
+		elif extension == 'youtube':
+			return 'youtube'
 		else:
 			return 'Unsuported'
 
@@ -101,6 +105,9 @@ class WSConsumer(WebsocketConsumer):
 			'type': type
 		}))
 
+		print("SWITCHED TO", filename)
+
+
 		myfile = pathlib.Path(__file__).parent.absolute().joinpath('log.txt')
 		with open(myfile, "w") as f:
 			f.seek(0)
@@ -109,7 +116,6 @@ class WSConsumer(WebsocketConsumer):
 
 
 	def connect(self):
-		print("aqui")
 		self.accept()
 		self.init()
 
@@ -119,48 +125,44 @@ class WSConsumer(WebsocketConsumer):
 		user_timer = time.time()
 
 		filename = list(self.cloud_content.keys())[self.currentindex]
-		timer = self.videos[filename] if self.extension(filename) == 'video' else 5
 
 		while True:
 			if(self.currentindex > len(self.cloud_content.keys()) - 1):
 				self.currentindex = 0
 
-			if time.time() - user_timer > 1:
-				try:
-					url_1 = 'http://peig2.westeurope.cloudapp.azure.com/api/agentupdates/3/'
-					r2 = requests.get(url_1, auth=('genix', 'genix'))
-				except:
-					print("Could not resolve URL...")
-
-				content_name = r2.json()['contentname']
-				content_confirm = r2.json()['content_confirm']
-
+			if time.time() - user_timer > 4:
+				content_name, content_confirm = self.verifyUserInput()
+				print("Content confirm: {}\t Content name in cloud: {}".format(content_confirm == False, content_name in self.cloud_content.keys()))
 				if (content_confirm == False) and (content_name in self.cloud_content.keys()):
-					ext = content_name.split('.')[-1]
-					print("UPDATED TO", content_name)
-					type = self.extension(ext)
-
-					# esta operação é pesada logo convem só fazer uma vez ou quando há novos videos
-					if type == 'video' and filename not in self.videos.keys():
-						clip = VideoFileClip(self.cloud_content[filename])
-						timer = clip.duration
-						self.videos[filename] = timer
-					elif type == 'video' and filename in self.videos.keys():
-						timer = self.videos[filename]
-					else:
-						timer = 5
-
-					self.send_msg(self.cloud_content[content_name], type)
 					cloud_timer = time.time()
 
+					ext = content_name.split('.')[-1]
+
+					type = self.extension(ext)
+					print(type)
+					if type == 'pdf':
+						print("Sending pdf")
+						self.send_msg("https://drive.google.com/viewerng/viewer?embedded=true&url="+ self.cloud_content[content_name], type)
+				
+					elif type == 'youtube':
+						print("Sending youtube")
+						link = self.cloud_content[content_name].split("watch?v=")
+						src = link[0] + 'embed/' + link[1] + '?autoplay=1&mute=1'
+						print(src)
+						self.send_msg(src, type)
+
+					else:
+						print("Sending a image ")
+						self.send_msg(self.cloud_content[content_name], type)
+
+					cloud_timer = time.time()
 					self.currentindex = list(self.cloud_content.keys()).index(content_name) + 1
+
 					subprocess.call("./postupdate.sh")
-
-
 				user_timer = time.time()
 
 
-			elif time.time() - cloud_timer > timer:
+			elif time.time() - cloud_timer > self.timers[self.currentindex]:
 				self.getFilesFromCloud()
 				contentdir = os.listdir(pathlib.Path(__file__).parent.absolute().joinpath('static/images/'))
 
@@ -170,24 +172,17 @@ class WSConsumer(WebsocketConsumer):
 				ext = filename.split('.')[-1]
 				type = self.extension(ext)
 
-				print(self.cloud_content[filename])
-
-				# esta operação é pesada logo convem só fazer uma vez ou quando há novos videos
-				if type == 'video' and filename not in self.videos.keys():
-					clip = VideoFileClip(self.cloud_content[filename])
-					timer = clip.duration
-					self.videos[filename] = timer
-				elif type == 'video' and filename in self.videos.keys():
-					timer = self.videos[filename]
-				else:
-					timer = 5
-
-				print("SWITCHED TO", filename)
-
+				
 				if type == 'pdf':
 					self.send_msg("https://drive.google.com/viewerng/viewer?embedded=true&url="+ self.cloud_content[filename], type)
+				
+				elif type == 'youtube':
+					link = self.cloud_content[filename].split("watch?v=")
+					src = link[0] + 'embed/' + link[1] + '?autoplay=1&mute=1'
+
+					self.send_msg(src, type)
+
 				else:
 					self.send_msg(self.cloud_content[filename], type)
 
-				print("Timer: {}".format(timer))
 				cloud_timer = time.time()

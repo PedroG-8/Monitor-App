@@ -3,6 +3,7 @@
     "",
     "\\realtime_pr",
     "\\realtime_pr\\integers",
+    "\\realtime_pr\\integers\\static",
     "\\realtime_pr\\realtime_pr",
     "\\realtime_pr\\templates"
   ],

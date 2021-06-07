@@ -161,6 +161,23 @@
                 src.innerHTML = '';
                 src.appendChild(ifrm);
             }
+
+            else if (data.type == 'youtube') {
+                var ifrm = document.createElement("iframe");
+                ifrm.classList.add("center-fit");
+                ifrm.classList.add("size_pdf");
+                ifrm.setAttribute('id', 'iframe')
+
+
+                ifrm.setAttribute("src", data.message);
+                ifrm.setAttribute("type", "content/pdf");
+
+
+
+                var src = document.getElementById("header");
+                src.innerHTML = '';
+                src.appendChild(ifrm);
+            }
         }
     </script>
 
