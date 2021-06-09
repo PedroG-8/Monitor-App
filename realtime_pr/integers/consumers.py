@@ -25,7 +25,7 @@ class WSConsumer(WebsocketConsumer):
 		print("Initializating WSConsumer")
 		self.cloud_content = {}
 		self.currentindex = 0
-
+		self.ids = []
 		self.timers = []
 		self.getFilesFromCloud()
 
@@ -57,6 +57,7 @@ class WSConsumer(WebsocketConsumer):
 			# Get cloud content
 			self.cloud_content = {}
 			self.timers = []
+			self.ids = []
 			for item in ls:
 				if str(item['doc']['youtubelink']) != '':
 					self.cloud_content[str(item['doc']['id']) + '.youtube'] = item['doc']['youtubelink']
@@ -64,8 +65,9 @@ class WSConsumer(WebsocketConsumer):
 				else:
 					self.cloud_content[item['doc']['docname']] = item['doc']['downloadlink']
 					self.timers.append(item['duration'])
+				self.ids.append(item['doc']['id'])
 
-					
+
 			print("Cloud content", self.cloud_content.keys())
 			print("Timers: ", self.timers)
 
@@ -111,7 +113,7 @@ class WSConsumer(WebsocketConsumer):
 		myfile = pathlib.Path(__file__).parent.absolute().joinpath('log.txt')
 		with open(myfile, "w") as f:
 			f.seek(0)
-			f.write(filename)
+			f.write(str(self.ids[self.currentindex]))
 			f.truncate()
 
 
@@ -140,10 +142,11 @@ class WSConsumer(WebsocketConsumer):
 
 					type = self.extension(ext)
 					print(type)
+
 					if type == 'pdf':
 						print("Sending pdf")
-						self.send_msg("https://drive.google.com/viewerng/viewer?embedded=true&url="+ self.cloud_content[content_name], type)
-				
+						self.send_msg("https://drive.google.com/viewerng/viewer?embedded=true&url=" + self.cloud_content[content_name], type)
+
 					elif type == 'youtube':
 						print("Sending youtube")
 						link = self.cloud_content[content_name].split("watch?v=")
@@ -167,15 +170,15 @@ class WSConsumer(WebsocketConsumer):
 				contentdir = os.listdir(pathlib.Path(__file__).parent.absolute().joinpath('static/images/'))
 
 				filename = list(self.cloud_content.keys())[self.currentindex]
-				self.currentindex += 1
+
 
 				ext = filename.split('.')[-1]
 				type = self.extension(ext)
 
-				
+
 				if type == 'pdf':
 					self.send_msg("https://drive.google.com/viewerng/viewer?embedded=true&url="+ self.cloud_content[filename], type)
-				
+
 				elif type == 'youtube':
 					link = self.cloud_content[filename].split("watch?v=")
 					src = link[0] + 'embed/' + link[1] + '?autoplay=1&mute=1'
@@ -184,5 +187,5 @@ class WSConsumer(WebsocketConsumer):
 
 				else:
 					self.send_msg(self.cloud_content[filename], type)
-
+				self.currentindex += 1
 				cloud_timer = time.time()
