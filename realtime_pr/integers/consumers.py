@@ -121,7 +121,7 @@ class WSConsumer(WebsocketConsumer):
 		self.accept()
 		self.init()
 
-		self.make_qr_code('http://peig2.westeurope.cloudapp.azure.com/control/3/')
+		self.make_qr_code('http://peig2.westeurope.cloudapp.azure.com/control/3')
 
 		cloud_timer = time.time()
 		user_timer = time.time()

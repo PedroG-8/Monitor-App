@@ -65,10 +65,27 @@
         } */
 
     </style>
+    <script>
+       function startTime() {
+         var today = new Date();
+         var h = today.getHours();
+         var m = today.getMinutes();
+         var s = today.getSeconds();
+         m = checkTime(m);
+         s = checkTime(s);
+         document.getElementById('txt').innerHTML =
+         h + ":" + m + ":" + s;
+         var t = setTimeout(startTime, 1000);
+       }
+       function checkTime(i) {
+         if (i < 10) {i = "0" + i};  // add zero in front of numbers < 10
+         return i;
+       }
+   </script>
 
 </head>
 
-<body id="clickBody" style="margin:0; padding: 0; background-color: black; overflow: hidden;">
+<body id="clickBody" onload="startTime()" style="margin:0; padding: 0; background-color: black; overflow: hidden;">
 
     <!-- TODO -->
     <!-- Testar estaticamente um pdf com link no servidor
@@ -82,6 +99,9 @@
 
 
              <img class="logo-img" src="static/images/logo.png"></img>
+
+
+             <div id="txt" style="font-size:30px; color:white"></div>
              <p class="qr-text">Read this QR Code to take control of the monitor!</p>
              <img id="qr" class="qr-img" src="static/images/qr.png"></img>
 
@@ -94,7 +114,7 @@
              </div>
          </div>
 
-         <h1 id="app"></h1>
+         <div id="app"></div>
 
 
     <!--
