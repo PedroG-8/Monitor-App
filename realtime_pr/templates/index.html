@@ -21,42 +21,48 @@
             display: grid;
             height: 100%;
         }
+
         .center-fit {
             max-width: 100%;
             max-height: 100vh;
             margin: auto;
         }
+
         .qr-text {
-          position: absolute;
-          bottom: 17%;
-          padding: 10%;
-          color: white;
-          font-size: 15px;
+            position: absolute;
+            bottom: 17%;
+            padding: 10%;
+            color: white;
+            font-size: 15px;
         }
+
         .qr-img {
-          position: absolute;
-          bottom: 3%;
-          margin-left: auto;
-          margin-right: auto;
-          left: 0;
-          right: 0;
-          /* , left & right : 0 */
+            position: absolute;
+            bottom: 3%;
+            margin-left: auto;
+            margin-right: auto;
+            left: 0;
+            right: 0;
+            /* , left & right : 0 */
         }
+
         .logo-img {
-          display: block;
-          width: 30%;
-          margin-top: 10%;
-          margin-left: auto;
-          margin-right: auto;
+            display: block;
+            width: 30%;
+            margin-top: 10%;
+            margin-left: auto;
+            margin-right: auto;
         }
+
         .col-sm-2 {
-          position: relative;
-          padding: 0;
-          background-image: linear-gradient(to top, black, rgb(70, 70, 70));
-          text-align: center;
+            position: relative;
+            padding: 0;
+            background-image: linear-gradient(to top, black, rgb(70, 70, 70));
+            text-align: center;
         }
+
         .col-sm-10 {
-          padding: 0;
+            padding: 0;
         }
 
         /* .grad {
@@ -66,6 +72,7 @@
 
     </style>
     <script>
+<<<<<<< HEAD
        function startTime() {
          var today = new Date();
          var h = today.getHours();
@@ -82,6 +89,24 @@
          return i;
        }
    </script>
+=======
+        function startTime() {
+            var today = new Date();
+            var h = today.getHours();
+            var m = today.getMinutes();
+            var s = today.getSeconds();
+            m = checkTime(m);
+            s = checkTime(s);
+            document.getElementById('txt').innerHTML =
+                h + ":" + m + ":" + s;
+            var t = setTimeout(startTime, 1000);
+        }
+        function checkTime(i) {
+            if (i < 10) { i = "0" + i };  // add zero in front of numbers < 10
+            return i;
+        }
+    </script>
+>>>>>>> 993a6128af05cc9a0ece0474f8fe598415d73222
 
 </head>
 
@@ -91,40 +116,50 @@
     <!-- Testar estaticamente um pdf com link no servidor
          e um video do youtube-->
 
-         <div id="divClick" class="row">
-           <script>
-             document.getElementById("clickBody").click();
-           </script>
-           <div class="col-sm-2" id="qr_div">
+    <div id="divClick" class="row">
+        <script>
+            document.getElementById("clickBody").click();
+        </script>
+        <div class="col-sm-2" id="qr_div">
 
 
+            <img class="logo-img" src="static/images/logo.png"></img>
+
+<<<<<<< HEAD
              <img class="logo-img" src="static/images/logo.png"></img>
 
 
              <div id="txt" style="font-size:30px; color:white"></div>
              <p class="qr-text">Read this QR Code to take control of the monitor!</p>
              <img id="qr" class="qr-img" src="static/images/qr.png"></img>
+=======
+>>>>>>> 993a6128af05cc9a0ece0474f8fe598415d73222
 
-           </div>
-           <div class="col-sm-10">
-             <!-- <iframe width="100%"
-                 src="https://www.youtube.com/embed/668nUCeBHyY?autoplay=1&mute=1">
-             </iframe> -->
-             <div class="imgbox" id="header"></div>
-             </div>
-         </div>
+            <div id="txt" style="font-size:30px; color:white"></div>
+            <p class="qr-text">Read this QR Code to take control of the monitor!</p>
+            <img id="qr" class="qr-img" src="static/images/qr.png"></img>
 
+<<<<<<< HEAD
          <div id="app"></div>
+=======
+        </div>
+        <div class="col-sm-10">
+            <!-- <iframe width="100%"
+                src="https://www.youtube.com/embed/668nUCeBHyY?autoplay=1&mute=1">
+            </iframe> -->
+            <div class="imgbox" id="header"></div>
+        </div>
+    </div>
+
+    <div id="app"></div>
+>>>>>>> 993a6128af05cc9a0ece0474f8fe598415d73222
 
 
     <!--
         Template para videos de youtube
         fazer em python:
-
         link.split("watch?v=")
         src = link[0] + 'embed/' + link[1] + '?autoplay=1&mute=1'
-
-
     <iframe with="420" height="315"
         src="https://www.youtube.com/embed/668nUCeBHyY?autoplay=1&mute=1">
     </iframe>-->

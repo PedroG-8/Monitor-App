@@ -36,7 +36,7 @@ class WSConsumer(WebsocketConsumer):
 			box_size=3,
 			border=1,
 		)
-
+		print(url)
 		qr.add_data(url)
 		qr.make(fit=True)
 		img = qr.make_image(fill_color="black", back_color="white").convert('RGB')
@@ -60,12 +60,13 @@ class WSConsumer(WebsocketConsumer):
 			self.ids = []
 			for item in ls:
 				if str(item['doc']['youtubelink']) != '':
-					self.cloud_content[str(item['doc']['id']) + '.youtube'] = item['doc']['youtubelink']
+					type = str(item['doc']['id']) + '.youtube'
+					self.cloud_content[item['doc']['id']] = [type, item['doc']['youtubelink']]
 					self.timers.append(item['duration'])
 				else:
-					self.cloud_content[item['doc']['docname']] = item['doc']['downloadlink']
+					
+					self.cloud_content[item['doc']['id']] = [item['doc']['docname'], item['doc']['downloadlink']]
 					self.timers.append(item['duration'])
-				self.ids.append(item['doc']['id'])
 
 
 			print("Cloud content", self.cloud_content.keys())
@@ -82,7 +83,7 @@ class WSConsumer(WebsocketConsumer):
 		try:
 			r2 = requests.get(url_1, auth=('genix', 'genix'))
 			erros = 0
-			return r2.json()['contentname'], r2.json()['content_confirm']
+			return int(r2.json()['contentid']), r2.json()['content_confirm']
 		except:
 			errors += 1
 			print("{}- Trying to resolve URL '{}'".format(erros, url_1))
@@ -109,11 +110,11 @@ class WSConsumer(WebsocketConsumer):
 
 		print("SWITCHED TO", filename)
 
-
+	def writeFile(self, id):
 		myfile = pathlib.Path(__file__).parent.absolute().joinpath('log.txt')
 		with open(myfile, "w") as f:
 			f.seek(0)
-			f.write(str(self.ids[self.currentindex]))
+			f.write(str(id))
 			f.truncate()
 
 
@@ -126,42 +127,43 @@ class WSConsumer(WebsocketConsumer):
 		cloud_timer = time.time()
 		user_timer = time.time()
 
-		filename = list(self.cloud_content.keys())[self.currentindex]
+		id = -1
+
+		# filename = list(self.cloud_content.keys())[self.currentindex]
 
 		while True:
 			if(self.currentindex > len(self.cloud_content.keys()) - 1):
 				self.currentindex = 0
 
-			if time.time() - user_timer > 4:
-				content_name, content_confirm = self.verifyUserInput()
-				print("Content confirm: {}\t Content name in cloud: {}".format(content_confirm == False, content_name in self.cloud_content.keys()))
-				if (content_confirm == False) and (content_name in self.cloud_content.keys()):
+			if time.time() - user_timer > 2:
+				id, content_confirm = self.verifyUserInput()
+
+				print("Content confirm: {}\t Content name in cloud: {}".format(content_confirm == False, id in self.cloud_content.keys()))
+				if (content_confirm == False) and (id in self.cloud_content.keys()):
 					cloud_timer = time.time()
 
-					ext = content_name.split('.')[-1]
-
+					filename = self.cloud_content.get(id)[0]
+					ext = filename.split('.')[-1]
 					type = self.extension(ext)
-					print(type)
 
 					if type == 'pdf':
-						print("Sending pdf")
-						self.send_msg("https://drive.google.com/viewerng/viewer?embedded=true&url=" + self.cloud_content[content_name], type)
+						self.send_msg("https://drive.google.com/viewerng/viewer?embedded=true&url="+ str(self.cloud_content.get(id)[1]), type)
 
 					elif type == 'youtube':
-						print("Sending youtube")
-						link = self.cloud_content[content_name].split("watch?v=")
+						link = str(self.cloud_content.get(id)[1]).split("watch?v=")
 						src = link[0] + 'embed/' + link[1] + '?autoplay=1&mute=1'
-						print(src)
+
 						self.send_msg(src, type)
 
 					else:
-						print("Sending a image ")
-						self.send_msg(self.cloud_content[content_name], type)
+						self.send_msg(self.cloud_content[id][1], type)
 
+					self.writeFile(id)
 					cloud_timer = time.time()
-					self.currentindex = list(self.cloud_content.keys()).index(content_name) + 1
-
+					self.currentindex = list(self.cloud_content.keys()).index(id) + 1
+					
 					subprocess.call("./postupdate.sh")
+					
 				user_timer = time.time()
 
 
@@ -169,23 +171,30 @@ class WSConsumer(WebsocketConsumer):
 				self.getFilesFromCloud()
 				contentdir = os.listdir(pathlib.Path(__file__).parent.absolute().joinpath('static/images/'))
 
-				filename = list(self.cloud_content.keys())[self.currentindex]
+				keys_list = list(self.cloud_content.keys())
+				id = keys_list[self.currentindex]
 
 
+				filename = self.cloud_content.get(id)[0]
 				ext = filename.split('.')[-1]
 				type = self.extension(ext)
 
 
 				if type == 'pdf':
-					self.send_msg("https://drive.google.com/viewerng/viewer?embedded=true&url="+ self.cloud_content[filename], type)
+					self.send_msg("https://drive.google.com/viewerng/viewer?embedded=true&url="+ self.cloud_content.get(id)[1], type)
 
 				elif type == 'youtube':
-					link = self.cloud_content[filename].split("watch?v=")
+					link = str(self.cloud_content.get(id)[1]).split("watch?v=")
 					src = link[0] + 'embed/' + link[1] + '?autoplay=1&mute=1'
 
 					self.send_msg(src, type)
 
 				else:
-					self.send_msg(self.cloud_content[filename], type)
+					self.send_msg(self.cloud_content.get(id)[1], type)
+
+				self.writeFile(id)
 				self.currentindex += 1
 				cloud_timer = time.time()
+
+			
+
