@@ -24,7 +24,9 @@ $CURL_BIN \
     -H "X-CSRFToken: $TOKEN" \
     -H "Cookie: csrftoken=$TOKEN" \
     -u genix:genix \
-    -F "content_confirm=true" \
+    -F "url_hash=$1" \
+    -F "expires=$2" \
+    -F "expires_max=$2" \
     -X PATCH http://peig2.westeurope.cloudapp.azure.com/api/agentupdates/3/
 
 echo ""

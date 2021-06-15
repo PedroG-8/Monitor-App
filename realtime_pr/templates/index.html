@@ -144,8 +144,6 @@
             console.log(data);
             document.querySelector('#app').innerText = data.message;
 
-
-
             if (data.type == 'img') {
                 var img = document.createElement("img");
                 img.src = data.message;

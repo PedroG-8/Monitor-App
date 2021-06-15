@@ -16,6 +16,13 @@ import urllib.request
 import requests
 import subprocess
 
+from datetime import datetime
+from datetime import timedelta
+from django.utils.timezone import now
+from django.utils import dateformat
+from django.utils.timezone import make_aware
+import hashlib
+import pytz
 
 class WSConsumer(WebsocketConsumer):
 
@@ -64,7 +71,7 @@ class WSConsumer(WebsocketConsumer):
 					self.cloud_content[item['doc']['id']] = [type, item['doc']['youtubelink']]
 					self.timers.append(item['duration'])
 				else:
-					
+
 					self.cloud_content[item['doc']['id']] = [item['doc']['docname'], item['doc']['downloadlink']]
 					self.timers.append(item['duration'])
 
@@ -88,6 +95,28 @@ class WSConsumer(WebsocketConsumer):
 			errors += 1
 			print("{}- Trying to resolve URL '{}'".format(erros, url_1))
 			self.verifyUserInput()
+
+	def get_expires_time(self):
+		url = 'http://peig2.westeurope.cloudapp.azure.com/api/agentupdates/3/'
+		try:
+			r2 = requests.get(url, auth=('genix', 'genix'))
+			erros = 0
+			return r2.json()['expires_max'], r2.json()['expires']
+		except:
+			errors += 1
+			print("{}- Trying to resolve URL '{}'".format(erros, url))
+			self.get_expires_time()
+
+	def get_newhash(self):
+		url = 'http://peig2.westeurope.cloudapp.azure.com/api/agentupdates/3/'
+		try:
+			r2 = requests.get(url, auth=('genix', 'genix'))
+			erros = 0
+			return r2.json()['url_hash']
+		except:
+			errors += 1
+			print("{}- Trying to resolve URL '{}'".format(erros, url))
+			self.get_expires_time()
 
 	def extension(self, extension):
 		if extension in ['png', 'jpg']:
@@ -117,12 +146,65 @@ class WSConsumer(WebsocketConsumer):
 			f.write(str(id))
 			f.truncate()
 
+	def check_expires(self):
+
+		# verificar se uma data qq (pode ser o 'expires') ja passou
+		expires_max, expires = self.get_expires_time()
+
+		print(expires_max)
+		print(expires)
+		# Expires max
+		ymd, hms = expires_max.split('T')
+		year, month, day = ymd.split('-')
+		hour, mins, secs = hms.split(':')[0:3]
+		secs = secs.split('+')[0]
+
+		naive = datetime(int(year), int(month), int(day), int(hour), int(mins), int(secs))
+		make_aware(naive)
+		expires_max = make_aware(naive, timezone=pytz.timezone("Europe/Lisbon"))
+
+		# Expires
+		ymd, hms = expires.split('T')
+		year, month, day = ymd.split('-')
+		hour, mins, secs = hms.split(':')[0:3]
+		secs = secs.split('+')[0]
+
+		naive = datetime(int(year), int(month), int(day), int(hour), int(mins), int(secs))
+		make_aware(naive)
+		expires = make_aware(naive, timezone=pytz.timezone("Europe/Lisbon"))
+
+		print("ENTRA")
+		if expires_max < now():
+			print("CHEGA AQUI")
+			# ir buscar o id
+			newhash = str(hashlib.md5(("3"+str(now)).encode()).hexdigest())
+			#novo qr
+			daqui_a_20min = now() + timedelta(minutes=20) # pode-se usar seconds=1200 tmb
+			expires_max = dateformat.format(daqui_a_20min, 'Y-m-dTH:i:s') # é isto que tem de ser espetado no endpoint
+			print(expires_max)
+
+			# subprocess.check_output(['./authpost2.sh', newhash, "'" + expires_max + "'"])
+			print("BFABFSDJHFA")
+			command = "sh authpost2.sh %s '%s'" %(newhash, expires_max)
+			# subprocess.check_output(command)
+			subprocess.call(command)
+			self.make_qr_code('http://peig2.westeurope.cloudapp.azure.com/control/dd518f35b5fb38f0587daecf17ddf672' + newhash)
+
+		elif expires < now():
+			newhash = str(hashlib.md5(("3"+str(now)).encode()).hexdigest())
+			#novo qr
+			daqui_a_20min = now() + timedelta(minutes=20) # pode-se usar seconds=1200 tmb
+			expires_max = dateformat.format(daqui_a_20min, 'Y-m-d H:i:s') # é isto que tem de ser espetado no endpoint
+
+			# subprocess.run(["./authpost2.sh ", newhash, " " + "'" + expires_max + "'"])
+			self.make_qr_code('http://peig2.westeurope.cloudapp.azure.com/control/' + newhash)
+
 
 	def connect(self):
 		self.accept()
 		self.init()
 
-		self.make_qr_code('http://peig2.westeurope.cloudapp.azure.com/control/3')
+		self.make_qr_code(self.get_newhash())
 
 		cloud_timer = time.time()
 		user_timer = time.time()
@@ -146,6 +228,8 @@ class WSConsumer(WebsocketConsumer):
 					ext = filename.split('.')[-1]
 					type = self.extension(ext)
 
+					self.check_expires()
+
 					if type == 'pdf':
 						self.send_msg("https://drive.google.com/viewerng/viewer?embedded=true&url="+ str(self.cloud_content.get(id)[1]), type)
 
@@ -161,9 +245,9 @@ class WSConsumer(WebsocketConsumer):
 					self.writeFile(id)
 					cloud_timer = time.time()
 					self.currentindex = list(self.cloud_content.keys()).index(id) + 1
-					
+
 					subprocess.call("./postupdate.sh")
-					
+
 				user_timer = time.time()
 
 
@@ -179,6 +263,7 @@ class WSConsumer(WebsocketConsumer):
 				ext = filename.split('.')[-1]
 				type = self.extension(ext)
 
+				self.check_expires()
 
 				if type == 'pdf':
 					self.send_msg("https://drive.google.com/viewerng/viewer?embedded=true&url="+ self.cloud_content.get(id)[1], type)
@@ -195,6 +280,3 @@ class WSConsumer(WebsocketConsumer):
 				self.writeFile(id)
 				self.currentindex += 1
 				cloud_timer = time.time()
-
-			
-
