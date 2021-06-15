@@ -151,13 +151,12 @@ class WSConsumer(WebsocketConsumer):
 		# verificar se uma data qq (pode ser o 'expires') ja passou
 		expires_max, expires = self.get_expires_time()
 
-		print(expires_max)
-		print(expires)
 		# Expires max
 		ymd, hms = expires_max.split('T')
 		year, month, day = ymd.split('-')
 		hour, mins, secs = hms.split(':')[0:3]
 		secs = secs.split('+')[0]
+		secs = secs.split('.')[0]
 
 		naive = datetime(int(year), int(month), int(day), int(hour), int(mins), int(secs))
 		make_aware(naive)
@@ -168,43 +167,50 @@ class WSConsumer(WebsocketConsumer):
 		year, month, day = ymd.split('-')
 		hour, mins, secs = hms.split(':')[0:3]
 		secs = secs.split('+')[0]
+		secs = secs.split('.')[0]
 
 		naive = datetime(int(year), int(month), int(day), int(hour), int(mins), int(secs))
 		make_aware(naive)
 		expires = make_aware(naive, timezone=pytz.timezone("Europe/Lisbon"))
 
-		print("ENTRA")
-		if expires_max < now():
-			print("CHEGA AQUI")
-			# ir buscar o id
-			newhash = str(hashlib.md5(("3"+str(now)).encode()).hexdigest())
-			#novo qr
-			daqui_a_20min = now() + timedelta(minutes=20) # pode-se usar seconds=1200 tmb
-			expires_max = dateformat.format(daqui_a_20min, 'Y-m-dTH:i:s') # é isto que tem de ser espetado no endpoint
-			print(expires_max)
 
-			# subprocess.check_output(['./authpost2.sh', newhash, "'" + expires_max + "'"])
-			print("BFABFSDJHFA")
-			command = "sh authpost2.sh %s '%s'" %(newhash, expires_max)
-			# subprocess.check_output(command)
-			subprocess.call(command)
-			self.make_qr_code('http://peig2.westeurope.cloudapp.azure.com/control/dd518f35b5fb38f0587daecf17ddf672' + newhash)
+		if expires_max < now():
+			print("Expira max e gera nova hash")
+			# ir buscar o id
+			newhash = str(hashlib.md5(("3"+str(now())).encode()).hexdigest())
+			print("Que é " + newhash)
+			#novo qr
+			daqui_a_20min = now() + timedelta(minutes=80) # pode-se usar seconds=1200 tmb
+			expires_max = dateformat.format(daqui_a_20min, 'Y-m-d H:i:s') # é isto que tem de ser espetado no endpoint
+			aux = expires_max.split(' ')
+			expires_max = aux[0] + 'T' + aux[1] + '+01:00'
+
+			print(expires_max)
+			print("Script")
+
+			subprocess.call(['./authpost2.sh', newhash, str(expires_max)])
+
+			self.make_qr_code('http://peig2.westeurope.cloudapp.azure.com/control/' + newhash)
 
 		elif expires < now():
-			newhash = str(hashlib.md5(("3"+str(now)).encode()).hexdigest())
-			#novo qr
-			daqui_a_20min = now() + timedelta(minutes=20) # pode-se usar seconds=1200 tmb
+			print("Expira e gera nova hash")
+			newhash2 = str(hashlib.md5(("3"+str(now())).encode()).hexdigest())
+			print("Que é " + newhash2)
+			daqui_a_20min = now() + timedelta(minutes=80) # pode-se usar seconds=1200 tmb
 			expires_max = dateformat.format(daqui_a_20min, 'Y-m-d H:i:s') # é isto que tem de ser espetado no endpoint
 
-			# subprocess.run(["./authpost2.sh ", newhash, " " + "'" + expires_max + "'"])
-			self.make_qr_code('http://peig2.westeurope.cloudapp.azure.com/control/' + newhash)
+			aux = expires_max.split(' ')
+			expires_max = aux[0] + 'T' + aux[1] + '+01:00'
+
+			subprocess.call(['./authpost2.sh', newhash2, str(expires_max)])
+			self.make_qr_code('http://peig2.westeurope.cloudapp.azure.com/control/' + newhash2)
 
 
 	def connect(self):
 		self.accept()
 		self.init()
 
-		self.make_qr_code(self.get_newhash())
+		self.make_qr_code('http://peig2.westeurope.cloudapp.azure.com/control/' + self.get_newhash())
 
 		cloud_timer = time.time()
 		user_timer = time.time()
