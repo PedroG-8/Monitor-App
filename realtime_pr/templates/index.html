@@ -38,6 +38,8 @@
 
         .qr-img {
             position: absolute;
+            max-width: 50%;
+            max-height: 50%;
             bottom: 3%;
             margin-left: auto;
             margin-right: auto;
@@ -143,6 +145,16 @@
             var data = JSON.parse(event.data);
             console.log(data);
             document.querySelector('#app').innerText = data.message;
+            document.querySelector('#qr').innerText = data.message;
+
+            if(data.change_qr == 'True') {
+              var img = document.createElement("img");
+              img.classList.add("qr-img");
+
+              var src = document.getElementById("header");
+              src.innerHTML = '';
+              src.appendChild(img);
+            }
 
             if (data.type == 'img') {
                 var img = document.createElement("img");
