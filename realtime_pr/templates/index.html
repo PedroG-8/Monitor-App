@@ -10,6 +10,8 @@
         * {
             margin: 0;
             padding: 0;
+            height: 100%;
+            width: 100%;
         }
 
         .size_pdf {
@@ -30,30 +32,48 @@
 
         .qr-text {
             position: absolute;
-            bottom: 17%;
+            bottom: 0;
+            right: 0;
             padding: 10%;
             color: white;
-            font-size: 15px;
+            font-size: 12px;
         }
 
         .qr-img {
-            position: absolute;
-            max-width: 50%;
-            max-height: 50%;
-            bottom: 3%;
-            margin-left: auto;
-            margin-right: auto;
-            left: 0;
-            right: 0;
+            display:block;
+            margin:auto;
+            height: 60%;
+            width: auto;
+            margin-top: 10%;
             /* , left & right : 0 */
         }
 
         .logo-img {
+            position: relative;
             display: block;
-            width: 30%;
+            width: 45%;
+            height: auto;
             margin-top: 10%;
             margin-left: auto;
             margin-right: auto;
+        }
+
+        .first-row {
+          height: 33%;
+        }
+
+        .another {
+          height: 30%;
+        }
+
+        .second-row {
+          position: relative;
+          height: 10%;
+        }
+
+        .third-row {
+          display: flex;
+          height: 27%;
         }
 
         .col-sm-2 {
@@ -93,25 +113,36 @@
 
 </head>
 
-<body id="clickBody" onload="startTime()" style="margin:0; padding: 0; background-color: black; overflow: hidden;">
+<body id="clickBody" onload="startTime()" style="width: 100%; height: 100%; margin:0; padding: 0; background-color: black; overflow: hidden;">
 
     <!-- TODO -->
     <!-- Testar estaticamente um pdf com link no servidor
          e um video do youtube-->
 
-    <div id="divClick" class="row">
+    <div class="row">
         <script>
             document.getElementById("clickBody").click();
         </script>
         <div class="col-sm-2" id="qr_div">
 
-
+          <div class="first-row">
             <img class="logo-img" src="static/images/logo.png"></img>
+            <div id="txt" style="font-size:30px; color:white; padding-top:5%;"></div>
+          </div>
+          <div class="another">
 
+          </div>
+          <div class="second-row">
+            <div class="qr-text">Read this QR Code to take control of the monitor!</div>
+          </div>
+          <div class="third-row">
 
-            <div id="txt" style="font-size:30px; color:white"></div>
-            <p class="qr-text">Read this QR Code to take control of the monitor!</p>
             <img id="qr" class="qr-img" src="static/images/qr.png"></img>
+          </div>
+
+
+
+
 
         </div>
         <div class="col-sm-10">
@@ -134,6 +165,7 @@
         src="https://www.youtube.com/embed/668nUCeBHyY?autoplay=1&mute=1">
     </iframe>-->
 
+    <img src="screen.jpg" id="myImage" />
 
 
     <script>
@@ -144,17 +176,21 @@
         socket.onmessage = function (event) {
             var data = JSON.parse(event.data);
             console.log(data);
-            document.querySelector('#app').innerText = data.message;
-            document.querySelector('#qr').innerText = data.message;
+            document.querySelector('#app').innerText = '';
+            document.querySelector('#qr').innerText = '';
 
-            if(data.change_qr == 'True') {
-              var img = document.createElement("img");
-              img.classList.add("qr-img");
-
-              var src = document.getElementById("header");
-              src.innerHTML = '';
-              src.appendChild(img);
-            }
+            // if(data.change_qr == 'True') {
+            //   console.log("Update qr plis")
+            //   var myImageElement = document.getElementById('qr');
+            //   myImageElement.src = 'screen.jpg?rand=' + Math.random();
+            //
+            //   // var img = document.createElement("img");
+            //   // img.classList.add("qr-img");
+            //   //
+            //   // var src = document.getElementById("header");
+            //   // src.innerHTML = '';
+            //   // src.appendChild(img);
+            // }
 
             if (data.type == 'img') {
                 var img = document.createElement("img");
