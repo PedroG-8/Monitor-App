@@ -36,6 +36,7 @@ class WSConsumer(WebsocketConsumer):
 		self.timers = []
 		self.getFilesFromCloud()
 		self.change_qr = False
+		self.qr_url = ''
 
 	def make_qr_code(self, url):
 		qr = qrcode.QRCode(
@@ -136,7 +137,8 @@ class WSConsumer(WebsocketConsumer):
 		self.send(json.dumps({
 			'message': filename,
 			'type': type,
-			'change_qr': self.change_qr
+			'change_qr': self.change_qr,
+			'qr_url': self.qr_url
 		}))
 
 		print("SWITCHED TO", filename)
@@ -193,6 +195,7 @@ class WSConsumer(WebsocketConsumer):
 			subprocess.call(['./authpost2.sh', newhash, str(expires_max)])
 			self.make_qr_code('http://peig2.westeurope.cloudapp.azure.com/control/' + newhash)
 			self.change_qr = True
+			self.qr_url = 'http://peig2.westeurope.cloudapp.azure.com/qr/' + str(newhash) + '.png'
 
 		elif expires < now():
 			print("Expira e gera nova hash")
@@ -207,6 +210,7 @@ class WSConsumer(WebsocketConsumer):
 			subprocess.call(['./authpost2.sh', newhash2, str(expires_max)])
 			self.make_qr_code('http://peig2.westeurope.cloudapp.azure.com/control/' + newhash2)
 			self.change_qr = True
+			self.qr_url = 'http://peig2.westeurope.cloudapp.azure.com/qr/' + str(newhash2) + '.png'
 
 
 	def connect(self):
