@@ -35,23 +35,20 @@ class WSConsumer(WebsocketConsumer):
 		self.ids = []
 		self.timers = []
 		self.getFilesFromCloud()
-		self.change_qr = False
-		self.qr_url = ''
+		self.change_qr = True
+		self.first_hash()
+		self.first_time = True
 
-	def make_qr_code(self, url):
-		qr = qrcode.QRCode(
-			version=1,
-			error_correction=qrcode.constants.ERROR_CORRECT_H,
-			box_size=3,
-			border=1,
-		)
-		print(url)
-		qr.add_data(url)
-		qr.make(fit=True)
-		img = qr.make_image(fill_color="black", back_color="white").convert('RGB')
 
-		img.save("integers/static/images/qr.png")
-
+	def first_hash(self):
+		newhash = str(hashlib.md5(("3"+str(now())).encode()).hexdigest())
+		self.qr_url = 'http://peig2.westeurope.cloudapp.azure.com/qr/' + str(newhash) + '.png'
+		daqui_a_20min = now() + timedelta(minutes=80) # pode-se usar seconds=1200 tmb
+		expires_max = dateformat.format(daqui_a_20min, 'Y-m-d H:i:s') # é isto que tem de ser espetado no endpoint
+		aux = expires_max.split(' ')
+		expires_max = aux[0] + 'T' + aux[1] + '+01:00'
+		subprocess.call(['./authpost2.sh', newhash, str(expires_max)])
+		sleep(2)
 
 
 	# verifica os ficheiros da cloud
@@ -94,7 +91,7 @@ class WSConsumer(WebsocketConsumer):
 			erros = 0
 			return int(r2.json()['contentid']), r2.json()['content_confirm']
 		except:
-			errors += 1
+			erros += 1
 			print("{}- Trying to resolve URL '{}'".format(erros, url_1))
 			self.verifyUserInput()
 
@@ -105,7 +102,7 @@ class WSConsumer(WebsocketConsumer):
 			erros = 0
 			return r2.json()['expires_max'], r2.json()['expires']
 		except:
-			errors += 1
+			erros += 1
 			print("{}- Trying to resolve URL '{}'".format(erros, url))
 			self.get_expires_time()
 
@@ -116,7 +113,7 @@ class WSConsumer(WebsocketConsumer):
 			erros = 0
 			return r2.json()['url_hash']
 		except:
-			errors += 1
+			erros += 1
 			print("{}- Trying to resolve URL '{}'".format(erros, url))
 			self.get_expires_time()
 
@@ -193,7 +190,7 @@ class WSConsumer(WebsocketConsumer):
 			print("Script")
 
 			subprocess.call(['./authpost2.sh', newhash, str(expires_max)])
-			self.make_qr_code('http://peig2.westeurope.cloudapp.azure.com/control/' + newhash)
+			# self.make_qr_code('http://peig2.westeurope.cloudapp.azure.com/control/' + newhash)
 			self.change_qr = True
 			self.qr_url = 'http://peig2.westeurope.cloudapp.azure.com/qr/' + str(newhash) + '.png'
 
@@ -208,7 +205,7 @@ class WSConsumer(WebsocketConsumer):
 			expires_max = aux[0] + 'T' + aux[1] + '+01:00'
 
 			subprocess.call(['./authpost2.sh', newhash2, str(expires_max)])
-			self.make_qr_code('http://peig2.westeurope.cloudapp.azure.com/control/' + newhash2)
+			# self.make_qr_code('http://peig2.westeurope.cloudapp.azure.com/control/' + newhash2)
 			self.change_qr = True
 			self.qr_url = 'http://peig2.westeurope.cloudapp.azure.com/qr/' + str(newhash2) + '.png'
 
@@ -217,7 +214,7 @@ class WSConsumer(WebsocketConsumer):
 		self.accept()
 		self.init()
 
-		self.make_qr_code('http://peig2.westeurope.cloudapp.azure.com/control/' + self.get_newhash())
+		# self.make_qr_code('http://peig2.westeurope.cloudapp.azure.com/control/' + self.get_newhash())
 
 		cloud_timer = time.time()
 		user_timer = time.time()
@@ -265,7 +262,8 @@ class WSConsumer(WebsocketConsumer):
 				user_timer = time.time()
 
 
-			elif time.time() - cloud_timer > self.timers[self.currentindex]:
+			elif (time.time() - cloud_timer > self.timers[self.currentindex-1]) or self.first_time:
+				self.first_time = False
 				self.getFilesFromCloud()
 				contentdir = os.listdir(pathlib.Path(__file__).parent.absolute().joinpath('static/images/'))
 
