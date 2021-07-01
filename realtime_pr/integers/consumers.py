@@ -54,7 +54,7 @@ class WSConsumer(WebsocketConsumer):
 	# verifica os ficheiros da cloud
 	def getFilesFromCloud(self):
 		url_10 = 'http://peig2.westeurope.cloudapp.azure.com/api/agent/3/'
-		erros = 0
+		#erros = 0
 		try:
 			r = requests.get(url_10, auth=('genix', 'genix'))
 			ls = r.json()['group']['contentprogram_set'][0]['programentry_set']
@@ -79,8 +79,8 @@ class WSConsumer(WebsocketConsumer):
 			print("Timers: ", self.timers)
 
 		except:
-			erros += 1
-			print("{}- Trying to resolve URL '{}'".format(erros, url_10))
+			#erros += 1
+			#print("{}- Trying to resolve URL '{}'".format(erros, url_10))
 			self.getFilesFromCloud()
 
 	# verifica o input do utilozador
@@ -88,33 +88,37 @@ class WSConsumer(WebsocketConsumer):
 		url_1 = 'http://peig2.westeurope.cloudapp.azure.com/api/agentupdates/3/'
 		try:
 			r2 = requests.get(url_1, auth=('genix', 'genix'))
-			erros = 0
-			return int(r2.json()['contentid']), r2.json()['content_confirm']
+			#erros = 0
+			a = int(r2.json()['contentid'])
+			b = r2.json()['content_confirm']
+			print(a, b)
+			return a, b
 		except:
-			erros += 1
-			print("{}- Trying to resolve URL '{}'".format(erros, url_1))
-			self.verifyUserInput()
+			#erros += 1
+			#print("{}- Trying to resolve URL '{}'".format(erros, url_1))
+			print("Exception no Verify User Input")
+			return None, None
 
 	def get_expires_time(self):
 		url = 'http://peig2.westeurope.cloudapp.azure.com/api/agentupdates/3/'
 		try:
 			r2 = requests.get(url, auth=('genix', 'genix'))
-			erros = 0
+			#erros = 0
 			return r2.json()['expires_max'], r2.json()['expires']
 		except:
-			erros += 1
-			print("{}- Trying to resolve URL '{}'".format(erros, url))
+			#erros += 1
+			#print("{}- Trying to resolve URL '{}'".format(erros, url))
 			self.get_expires_time()
 
 	def get_newhash(self):
 		url = 'http://peig2.westeurope.cloudapp.azure.com/api/agentupdates/3/'
 		try:
 			r2 = requests.get(url, auth=('genix', 'genix'))
-			erros = 0
+			#erros = 0
 			return r2.json()['url_hash']
 		except:
-			erros += 1
-			print("{}- Trying to resolve URL '{}'".format(erros, url))
+			#erros += 1
+			#print("{}- Trying to resolve URL '{}'".format(erros, url))
 			self.get_expires_time()
 
 	def extension(self, extension):
@@ -228,6 +232,8 @@ class WSConsumer(WebsocketConsumer):
 				self.currentindex = 0
 
 			if time.time() - user_timer > 2:
+				id = None
+				content_confirm = None
 				id, content_confirm = self.verifyUserInput()
 
 				print("Content confirm: {}\t Content name in cloud: {}".format(content_confirm == False, id in self.cloud_content.keys()))
